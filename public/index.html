@@ -27,7 +27,7 @@
         async function askPermissionAndStart() {
             const app = document.getElementById('app');
             try {
-                await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
                 app.innerHTML = `
                     <p>Do you want to play a game With Si_l3issewi?</p>
                     <button onclick="startGame(true)">eyy</button>
