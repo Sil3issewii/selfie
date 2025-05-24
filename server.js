@@ -1,28 +1,45 @@
 ﻿const express = require('express');
+const bodyParser = require('body-parser');
+const cloudinary = require('cloudinary').v2;
 const path = require('path');
-const fs = require('fs');
+
+cloudinary.config({ 
+  cloud_name: 'dbu3lr13i', 
+  api_key: '738414349564117', 
+  api_secret: '03HmeWpOp9P74f1saeOGWzzAfp0' 
+});
 
 const app = express();
-app.use(express.json({ limit: '10mb' }));
+app.use(bodyParser.json({ limit: '10mb' }));
 
-// خليك تخدم ملفات الواجهة من فولدر public
+// Serve static files from the 'public' folder
 app.use(express.static(path.join(__dirname, 'public')));
 
-// مسار رفع الصور
 app.post('/upload', (req, res) => {
-  const { image, answer } = req.body;
-  const base64Data = image.replace(/^data:image\/png;base64,/, "");
-  const filename = `selfie_${Date.now()}_${answer}.png`;
-  fs.writeFile(path.join(__dirname, 'uploads', filename), base64Data, 'base64', (err) => {
-    if (err) return res.status(500).send('خطأ في حفظ الصورة');
-    console.log('تم حفظ الصورة:', filename);
-    res.send('تم الاستلام');
-  });
-});
+  try {
+    const { image, answer } = req.body;
+    const base64Data = image.replace(/^data:image\/png;base64,/, "");
+    const buffer = Buffer.from(base64Data, 'base64');
 
-// مش لازم تكتب app.get('/') لأننا نستخدم express.static
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: 'selfie', public_id: `selfie_${Date.now()}_${answer}`, resource_type: 'image' },
+      (error, result) => {
+        if (error) {
+          console.error(error);
+          return res.status(500).send('خطأ في رفع الصورة');
+        }
+        console.log('تم رفع الصورة إلى Cloudinary:', result.secure_url);
+        res.send('تم رفع الصورة بنجاح');
+      }
+    );
+
+    stream.end(buffer);
+
+  } catch (err) {
+    console.error('خطأ:', err);
+    res.status(500).send('خطأ داخلي');
+  }
+});
 
 const PORT = 3000;
-app.listen(PORT, () => {
-  console.log(`السيرفر يعمل على المنفذ ${PORT}`);
-});
+app.listen(PORT, () => console.log(`السيرفر يعمل على المنفذ ${PORT}`));
